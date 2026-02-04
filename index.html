@@ -1,572 +1,1047 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>گلدیار پرو</title>
+    <title>گلدیار پرو - تحلیل حرفه‌ای بازار طلا و ارز</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141824;
+            --bg-card: rgba(30, 35, 50, 0.9);
+            --border-color: rgba(251, 191, 36, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --accent-gold: #fbbf24;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --sidebar-width: 280px;
+        }
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: white;
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background 0.3s ease;
+            overflow-x: hidden;
             min-height: 100vh;
-            padding: 1rem;
+            position: relative;
         }
-        .header { 
-            background: rgba(255,255,255,0.1);
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(251,191,36,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(245,158,11,0.06) 0%, transparent 50%);
+            opacity: 1; pointer-events: none; z-index: 0;
         }
-        .btn {
-            padding: 0.6rem 1.2rem;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: bold;
+        body::after {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(251,191,36,0.01) 100px, rgba(251,191,36,0.01) 200px),
+                repeating-linear-gradient(-45deg, transparent, transparent 100px, rgba(245,158,11,0.01) 100px, rgba(245,158,11,0.01) 200px);
+            opacity: 0.5; pointer-events: none; z-index: 0;
         }
-        .btn-green { background: #10b981; color: white; }
-        .btn-red { background: #ef4444; color: white; }
-        .btn-yellow { background: #fbbf24; color: black; }
-        .btn-disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
-        .btn:active:not(.btn-disabled) { transform: scale(0.95); }
-        .card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 1rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .price-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 0.75rem; 
-            margin-bottom: 1rem;
-        }
-        .price-card {
-            background: rgba(255,255,255,0.05);
-            border-left: 4px solid #f59e0b;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-        }
-        .price-value { 
-            font-size: 1.2rem; 
-            font-weight: bold; 
-            color: #fbbf24; 
-            margin: 0.5rem 0;
-        }
-        .text-sm { font-size: 0.8rem; }
-        .text-gray { color: #9ca3af; }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+        [data-theme="light"] body::before { opacity: 0.3; }
+        [data-theme="light"] body::after { opacity: 0.2; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed; right: 0; top: 0;
+            width: var(--sidebar-width); height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 2px solid var(--border-color);
+            padding: 1.5rem; overflow-y: auto;
+            transition: transform 0.3s ease;
             z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.3);
         }
+        .sidebar.hidden { transform: translateX(100%); }
+        @media (max-width: 968px) {
+            .sidebar { transform: translateX(100%); width: 100%; max-width: 320px; }
+            .sidebar.show { transform: translateX(0); }
+        }
+        .logo { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); }
+        .logo-icon { font-size: 2.5rem; filter: drop-shadow(0 0 8px rgba(251,191,36,0.5)); }
+        .logo-text { font-size: 1.5rem; font-weight: bold; background: linear-gradient(135deg, var(--accent-gold), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .user-info { background: var(--bg-card); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1.5rem; border: 1px solid var(--border-color); }
+        .user-email { font-size: 0.9rem; color: var(--accent-green); font-weight: 600; margin-bottom: 0.5rem; }
+        .user-status { display: inline-block; background: linear-gradient(135deg, var(--accent-gold), #f59e0b); color: #000; padding: 0.3rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: bold; }
+        .nav-item { padding: 0.9rem 1.2rem; margin-bottom: 0.6rem; border-radius: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 1rem; transition: all 0.3s; color: var(--text-secondary); border: 1px solid transparent; }
+        .nav-item:hover { background: var(--bg-card); color: var(--text-primary); border-color: var(--border-color); transform: translateX(-4px); }
+        .nav-item.active { background: linear-gradient(135deg, var(--accent-blue), #2563eb); color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+        .nav-icon { font-size: 1.3rem; width: 1.8rem; }
+
+        /* ===== MAIN ===== */
+        .main-content { margin-right: var(--sidebar-width); padding: 2rem; min-height: 100vh; position: relative; z-index: 1; }
+        @media (max-width: 968px) { .main-content { margin-right: 0; padding: 1rem; } }
+
+        /* ===== TOPBAR ===== */
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding: 1.2rem 1.5rem; background: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .hamburger { display: none; font-size: 1.8rem; cursor: pointer; padding: 0.5rem; color: var(--accent-gold); transition: transform 0.3s; }
+        .hamburger:hover { transform: rotate(90deg); }
+        @media (max-width: 968px) { .hamburger { display: block; } }
+        .topbar-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+
+        /* ===== BUTTONS ===== */
+        .btn { padding: 0.7rem 1.4rem; border: none; border-radius: 0.75rem; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: all 0.3s; display: inline-flex; align-items: center; gap: 0.6rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), #2563eb); color: white; }
+        .btn-success { background: linear-gradient(135deg, var(--accent-green), #059669); color: white; }
+        .btn-warning { background: linear-gradient(135deg, var(--accent-gold), #f59e0b); color: #000; }
+        .btn-danger { background: linear-gradient(135deg, var(--accent-red), #dc2626); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--border-color); color: var(--text-primary); box-shadow: none; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+        .btn:active { transform: translateY(-1px); }
+
+        /* ===== THEME TOGGLE ===== */
+        .theme-toggle { width: 56px; height: 30px; background: var(--bg-card); border-radius: 15px; position: relative; cursor: pointer; border: 2px solid var(--border-color); transition: all 0.3s; }
+        .theme-toggle:hover { border-color: var(--accent-gold); }
+        .theme-toggle-slider { width: 24px; height: 24px; background: linear-gradient(135deg, var(--accent-gold), #f59e0b); border-radius: 50%; position: absolute; top: 1px; right: 1px; transition: transform 0.3s; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        [data-theme="light"] .theme-toggle-slider { transform: translateX(-26px); }
+
+        .credit-badge { background: linear-gradient(135deg, var(--accent-gold), #f59e0b); color: #000; padding: 0.6rem 1.2rem; border-radius: 2rem; font-weight: bold; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.6rem; box-shadow: 0 4px 12px rgba(251,191,36,0.4); }
+
+        /* ===== CARDS ===== */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1.2rem; padding: 1.8rem; transition: all 0.4s; backdrop-filter: blur(10px); position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent-gold), #f59e0b, var(--accent-gold)); background-size: 200% 100%; animation: shimmer 3s linear infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(251,191,36,0.2); border-color: var(--accent-gold); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .card-title { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.7rem; }
+        .card-icon { font-size: 1.8rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .price-value { font-size: 2.2rem; font-weight: bold; background: linear-gradient(135deg, var(--accent-gold), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-align: center; margin: 1.5rem 0; filter: drop-shadow(0 2px 4px rgba(251,191,36,0.3)); }
+        .price-label { text-align: center; color: var(--text-secondary); font-size: 0.95rem; font-weight: 500; }
+
+        /* ===== SIGNALS ===== */
+        .signal-buy, .signal-sell, .signal-hold, .signal-warning {
+            padding: 1.2rem; border-radius: 0.9rem; text-align: center; font-weight: bold; margin-top: 1.5rem; font-size: 1.05rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .signal-buy { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.25)); border: 2px solid var(--accent-green); color: var(--accent-green); }
+        .signal-sell { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.25)); border: 2px solid var(--accent-red); color: var(--accent-red); }
+        .signal-hold { background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.25)); border: 2px solid var(--accent-gold); color: var(--accent-gold); }
+        .signal-warning { background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.25)); border: 2px solid #f97316; color: #f97316; }
+
+        .signal-best-buy {
+            background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.35));
+            border: 3px solid var(--accent-green); color: var(--accent-green);
+            padding: 1.2rem; border-radius: 0.9rem; text-align: center; font-weight: bold; font-size: 1.1rem;
+            animation: pulse-green 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(16,185,129,0.3);
+        }
+        .signal-best-sell {
+            background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.35));
+            border: 3px solid var(--accent-red); color: var(--accent-red);
+            padding: 1.2rem; border-radius: 0.9rem; text-align: center; font-weight: bold; font-size: 1.1rem;
+            animation: pulse-red 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(239,68,68,0.3);
+        }
+        .signal-good-buy {
+            background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.2));
+            border: 2px solid var(--accent-green); color: var(--accent-green);
+            padding: 1.2rem; border-radius: 0.9rem; text-align: center; font-weight: bold; font-size: 1.05rem;
+        }
+        .signal-caution {
+            background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.2));
+            border: 2px solid var(--accent-gold); color: var(--accent-gold);
+            padding: 1.2rem; border-radius: 0.9rem; text-align: center; font-weight: bold; font-size: 1.05rem;
+        }
+        .signal-normal {
+            background: rgba(100,116,139,0.1); border: 2px solid var(--text-secondary); color: var(--text-secondary);
+            padding: 1.2rem; border-radius: 0.9rem; text-align: center; font-weight: bold; font-size: 1.05rem;
+        }
+        @keyframes pulse-green { 0%,100% { box-shadow: 0 0 20px rgba(16,185,129,0.3); transform: scale(1); } 50% { box-shadow: 0 0 35px rgba(16,185,129,0.7); transform: scale(1.02); } }
+        @keyframes pulse-red { 0%,100% { box-shadow: 0 0 20px rgba(239,68,68,0.3); transform: scale(1); } 50% { box-shadow: 0 0 35px rgba(239,68,68,0.7); transform: scale(1.02); } }
+
+        /* ===== CHART ===== */
+        .chart-container { position: relative; height: 220px; margin-top: 1.5rem; }
+
+        /* ===== MODAL ===== */
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 2000; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(8px); }
         .modal.show { display: flex; }
-        .modal-content {
-            background: #1e293b;
-            padding: 2rem;
-            border-radius: 1rem;
-            max-width: 400px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            margin: 0.5rem 0;
-            border: none;
-            border-radius: 0.5rem;
-            background: #334155;
-            color: white;
-            font-size: 1rem;
-        }
-        input:focus { outline: 2px solid #10b981; }
-        h1 { font-size: 1.3rem; }
-        h2 { margin-bottom: 1rem; }
-        h3 { margin-bottom: 0.5rem; font-size: 1.1rem; }
-        .welcome {
-            text-align: center;
-            padding: 3rem 1rem;
-        }
-        .welcome h2 { font-size: 2rem; margin-bottom: 1rem; }
-        .status-badge {
-            background: #fbbf24;
-            color: black;
-            padding: 0.3rem 0.6rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            margin-right: 0.5rem;
-            display: inline-block;
-        }
-        .loading {
-            text-align: center;
-            padding: 3rem 1rem;
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top-color: #10b981;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
+        .modal-content { background: var(--bg-secondary); padding: 2.5rem; border-radius: 1.5rem; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--border-color); }
+        .modal-close { font-size: 2rem; cursor: pointer; color: var(--text-secondary); transition: all 0.3s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .modal-close:hover { color: var(--accent-red); background: rgba(239,68,68,0.1); transform: rotate(90deg); }
+
+        input, select, textarea { width: 100%; padding: 0.9rem; margin: 0.6rem 0; border: 2px solid var(--border-color); border-radius: 0.75rem; background: var(--bg-card); color: var(--text-primary); font-size: 1rem; transition: all 0.3s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+        .success, .error, .info-box { padding: 1rem; border-radius: 0.75rem; margin: 0.8rem 0; border: 1px solid; }
+        .success { background: rgba(16,185,129,0.15); border-color: var(--accent-green); color: var(--accent-green); }
+        .error { background: rgba(239,68,68,0.15); border-color: var(--accent-red); color: var(--accent-red); }
+        .info-box { background: rgba(59,130,246,0.1); border-color: var(--accent-blue); font-size: 0.9rem; line-height: 1.7; }
+
+        /* ===== ALGO CARDS ===== */
+        .algo-card { background: var(--bg-card); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); transition: all 0.3s; }
+        .algo-card:hover { border-color: var(--accent-gold); box-shadow: 0 4px 12px rgba(251,191,36,0.15); }
+        .algo-title { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.6rem; font-weight: 500; }
+        .algo-value { font-size: 1.3rem; font-weight: bold; color: var(--accent-gold); }
+        .market-value { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.15)); border: 2px solid var(--accent-blue); padding: 1rem; border-radius: 0.75rem; margin-top: 1.5rem; }
+
+        /* ===== ANALYSIS CARDS (screenshot style) ===== */
+        .analysis-card { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 1.2rem; padding: 0; overflow: hidden; transition: all 0.3s; margin-bottom: 1.5rem; }
+        .analysis-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .analysis-header { background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1)); padding: 1.5rem; border-bottom: 2px solid var(--border-color); display: flex; align-items: center; gap: 0.75rem; }
+        .analysis-icon { font-size: 2rem; }
+        .analysis-title { font-size: 1.2rem; font-weight: bold; color: var(--text-primary); }
+        .analysis-body { padding: 1.5rem; }
+
+        /* price-comparison: 2 boxes side by side (like screenshot) */
+        .price-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        @media (max-width: 500px) { .price-comparison { grid-template-columns: 1fr; } }
+        .price-box { background: var(--bg-primary); padding: 1.2rem; border-radius: 0.75rem; border: 2px solid var(--border-color); text-align: center; }
+        .price-box.green-border { border-color: var(--accent-green); }
+        .price-box.blue-border { border-color: var(--accent-blue); }
+        .price-box-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.6rem; }
+        .price-box-value { font-size: 1.4rem; font-weight: bold; color: var(--accent-gold); }
+        .price-box-unit { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem; }
+
+        /* difference badge: big colored box */
+        .difference-box { background: var(--bg-primary); border: 2px solid var(--border-color); border-radius: 0.75rem; padding: 1rem 1.2rem; margin: 1rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+        .difference-left { display: flex; flex-direction: column; gap: 0.2rem; }
+        .difference-value-big { font-size: 1.6rem; font-weight: bold; }
+        .difference-value-big.green { color: var(--accent-green); }
+        .difference-value-big.red { color: var(--accent-red); }
+        .difference-value-big.blue { color: var(--accent-blue); }
+        .difference-arrow { font-size: 1.2rem; }
+        .difference-right { text-align: left; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+
+        /* interpretation box */
+        .interpretation { background: rgba(59,130,246,0.05); border-right: 4px solid var(--accent-blue); padding: 1rem 1.2rem; border-radius: 0 0.5rem 0.5rem 0; margin-top: 1rem; font-size: 0.9rem; line-height: 1.7; color: var(--text-secondary); }
+        .interpretation-title { font-weight: bold; color: var(--accent-blue); margin-bottom: 0.4rem; font-size: 0.95rem; }
+
+        /* ===== DISCLAIMER ===== */
+        .disclaimer { background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05)); border: 2px solid var(--accent-red); border-radius: 0.9rem; padding: 1.2rem; margin-bottom: 2rem; font-size: 0.9rem; line-height: 1.7; color: var(--text-secondary); }
+        .disclaimer-title { font-weight: bold; color: var(--accent-red); margin-bottom: 0.5rem; font-size: 1rem; }
+
+        /* ===== SIGNAL CARD (for signals page) ===== */
+        .signal-card { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; transition: all 0.3s; }
+        .signal-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .signal-card.high-buy { border-color: var(--accent-green); background: linear-gradient(135deg, rgba(16,185,129,0.08), var(--bg-card)); }
+        .signal-card.high-sell { border-color: var(--accent-red); background: linear-gradient(135deg, rgba(239,68,68,0.08), var(--bg-card)); }
+        .signal-card.med { border-color: var(--accent-gold); background: linear-gradient(135deg, rgba(251,191,36,0.08), var(--bg-card)); }
+        .signal-card.low { border-color: var(--accent-blue); background: linear-gradient(135deg, rgba(59,130,246,0.08), var(--bg-card)); }
+        .signal-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .signal-card-title { font-size: 1.1rem; font-weight: bold; }
+        .signal-card-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
+        .signal-priority-badge { font-size: 0.75rem; font-weight: bold; padding: 0.25rem 0.6rem; border-radius: 1rem; }
+        .signal-priority-badge.high { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+        .signal-priority-badge.medium { background: rgba(251,191,36,0.2); color: var(--accent-gold); }
+        .signal-priority-badge.low { background: rgba(59,130,246,0.2); color: var(--accent-blue); }
+
+        /* ===== NOTIFICATION ===== */
+        .notification { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%) translateY(-120px); background: var(--bg-secondary); border: 2px solid var(--border-color); padding: 1.2rem 1.8rem; border-radius: 1rem; box-shadow: 0 12px 40px rgba(0,0,0,0.4); z-index: 3000; opacity: 0; transition: all 0.4s cubic-bezier(0.68,-0.55,0.265,1.55); max-width: 450px; backdrop-filter: blur(10px); }
+        .notification.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        .loading { display: inline-block; width: 22px; height: 22px; border: 3px solid var(--border-color); border-top-color: var(--accent-gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .error {
-            background: #7f1d1d;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin: 1rem 0;
-            border: 1px solid #ef4444;
+
+        .edit-btn { background: linear-gradient(135deg, var(--accent-gold), #f59e0b); color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.3s; margin-top: 0.75rem; width: 100%; }
+        .edit-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(251,191,36,0.4); }
+        .edit-btn:disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
+
+        /* ===== WELCOME ===== */
+        .welcome-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; z-index: 1; }
+        .welcome-card { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 2rem; padding: 3rem; max-width: 600px; text-align: center; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .welcome-title { font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--accent-gold), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .welcome-subtitle { color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 3rem; line-height: 1.8; }
+
+        @media (max-width: 768px) {
+            .price-value { font-size: 1.8rem; }
+            .card { padding: 1.2rem; }
+            .topbar { padding: 1rem; }
+            .welcome-card { padding: 2rem; }
+            .welcome-title { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <div class="loading">
-        <div class="spinner"></div>
-        <div>در حال اتصال به سرور...</div>
+<!-- Welcome Screen -->
+<div id="welcomeScreen" class="welcome-screen" style="display:none;">
+    <div class="welcome-card">
+        <div class="logo-icon" style="font-size:4rem;margin-bottom:1rem;">💎</div>
+        <h1 class="welcome-title">گلدیار پرو</h1>
+        <p class="welcome-subtitle">تحلیل هوشمند و حرفه‌ای بازار طلا و ارز<br>✨ قیمت لحظه‌ای | 📊 تحلیل دقیق | 🎯 سیگنال خرید</p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="showAuth('login')" style="padding:1rem 2.5rem;font-size:1.1rem;">ورود به حساب</button>
+            <button class="btn btn-warning" onclick="showAuth('register')" style="padding:1rem 2.5rem;font-size:1.1rem;">ثبت‌نام رایگان</button>
+        </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Sidebar -->
+<div class="sidebar hidden" id="sidebar">
+    <div class="logo"><span class="logo-icon">💎</span><span class="logo-text">گلدیار پرو</span></div>
+    <div class="user-info" id="userInfo"></div>
+    <div class="nav-item active" onclick="switchPage('prices')" data-page="prices"><span class="nav-icon">💰</span><span>قیمت‌های زنده</span></div>
+    <div class="nav-item" onclick="switchPage('analysis')" data-page="analysis"><span class="nav-icon">📊</span><span>تحلیل‌ها</span></div>
+    <div class="nav-item" onclick="switchPage('signals')" data-page="signals"><span class="nav-icon">🎯</span><span>سیگنال‌های پیشنهادی</span></div>
+    <div class="nav-item" onclick="switchPage('calculator')" data-page="calculator"><span class="nav-icon">🧮</span><span>ماشین حساب</span></div>
+    <div class="nav-item" onclick="switchPage('settings')" data-page="settings"><span class="nav-icon">⚙️</span><span>تنظیمات</span></div>
+    <div style="margin-top:2rem;"><button class="btn btn-danger" onclick="logout()" style="width:100%;"><span>🚪</span><span>خروج</span></button></div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content" id="mainContent" style="display:none;">
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <div class="hamburger" onclick="toggleSidebar()">☰</div>
+            <h1 style="font-size:1.6rem;" id="pageTitle">داشبورد</h1>
+        </div>
+        <div class="topbar-actions">
+            <div class="credit-badge" id="creditBadge"><span>⭐</span><span>افتتاحیه - پرو رایگان!</span></div>
+            <div class="theme-toggle" onclick="toggleTheme()"><div class="theme-toggle-slider"></div></div>
+            <button class="btn btn-outline" onclick="fetchLivePrices()" title="به‌روزرسانی قیمت‌ها"><span>🔄</span></button>
+        </div>
+    </div>
+    <div id="pageContent"></div>
+</div>
+
+<!-- Notification -->
+<div class="notification" id="notification"></div>
+
+<!-- Auth Modal -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2 id="authTitle">ورود</h2><span class="modal-close" onclick="closeModal('authModal')">×</span></div>
+        <input type="email" id="email" placeholder="ایمیل">
+        <input type="password" id="pass" placeholder="رمز عبور (حداقل 6 کاراکتر)">
+        <div id="authMsg"></div>
+        <button class="btn btn-primary" onclick="doAuth()" style="width:100%;margin-top:1.5rem;padding:1rem;"><span id="authBtnText">تایید</span></button>
+        <div style="text-align:center;margin-top:1.5rem;"><a href="#" onclick="switchAuthMode()" style="color:var(--accent-blue);text-decoration:none;" id="switchAuthLink">ثبت‌نام نکرده‌اید؟</a></div>
+    </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div id="editPriceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2 id="editPriceTitle">ویرایش قیمت</h2><span class="modal-close" onclick="closeModal('editPriceModal')">×</span></div>
+        <div class="info-box" id="currentPriceInfo"></div>
+        <label style="display:block;margin-bottom:0.5rem;font-weight:600;">قیمت جدید:</label>
+        <input type="number" id="newPrice" placeholder="قیمت جدید را وارد کنید" step="0.01">
+        <button class="btn btn-primary" onclick="saveEditedPrice()" style="width:100%;margin-top:1.5rem;padding:1rem;">✅ ذخیره تغییرات</button>
+    </div>
+</div>
 
 <script>
-(function() {
-    'use strict';
-    
-    console.log('✅ App started');
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const WORKER_API_URL = 'https://fancy-cloud-73d3.yousef7777t.workers.dev/api/price';
 
-    // ⚠️⚠️⚠️ کلیدهای Supabase خود را اینجا قرار دهید ⚠️⚠️⚠️
-    const SUPABASE_URL = 'https://mbigvlhecgfjjemvmzjf.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iaWd2bGhlY2dmamplbXZtempmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NTg0MDQsImV4cCI6MjA4MzAzNDQwNH0.sbv2qvAUEB3rnnsrmut_o1hsAhhyTR_o5FZiJ4zOPeo';
+const DB = {
+    getUsers: () => JSON.parse(localStorage.getItem('goldyar_users') || '[]'),
+    saveUsers: u => localStorage.setItem('goldyar_users', JSON.stringify(u)),
+    getCurrentUser: () => JSON.parse(localStorage.getItem('goldyar_current_user') || 'null'),
+    setCurrentUser: u => localStorage.setItem('goldyar_current_user', JSON.stringify(u)),
+    logout: () => localStorage.removeItem('goldyar_current_user'),
+    getPrices: () => JSON.parse(localStorage.getItem('goldyar_prices') || 'null'),
+    savePrices: p => localStorage.setItem('goldyar_prices', JSON.stringify(p))
+};
 
-    const hasValidKeys = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && 
-                         SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY' &&
-                         SUPABASE_URL.includes('supabase.co');
+let app = {
+    user: null,
+    isPro: true,
+    currentPage: 'prices',
+    theme: localStorage.getItem('theme') || 'dark',
+    authMode: 'login',
+    editingPrice: null,
+    prices: {
+        goldPrice: 4049,
+        silverPrice: 65,
+        usdRate: 158000,
+        mesghalMarket: 8920000,
+        geram18Market: 1800000,
+        dirhamRate: 158000,
+        coinPrice: 19000000,
+        gold18UAE: 450,
+        bourse: 290000,
+        brent: 70,
+        tether: 158000,
+        btc: 0
+    },
+    priceHistory: [],
+    signals: []           // ✅ اصلاح: آرایه سیگنال‌ها
+};
 
-    console.log('🔑 Valid keys:', hasValidKeys);
+// ============================================================
+// UTILITY
+// ============================================================
+function formatNumber(n) { return new Intl.NumberFormat('fa-IR').format(Math.round(n)); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+function toggleTheme() { app.theme = app.theme === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', app.theme); localStorage.setItem('theme', app.theme); }
+function showNotification(msg, type = 'success') {
+    const n = document.getElementById('notification');
+    n.textContent = msg; n.className = `notification ${type}`; n.classList.add('show');
+    setTimeout(() => n.classList.remove('show'), 3500);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-    let supabaseClient = null;
-    let currentUser = null;
-    let isSubscribed = false;
-
-    const prices = {
-        goldPrice: 2700,
-        silverPrice: 32,
-        usdRate: 108000,
-        mesghalMarket: 48500000,
-        geram18Market: 3550000,
-        dirhamRate: 29500
-    };
-
-    function formatNumber(num) {
-        return new Intl.NumberFormat('fa-IR').format(Math.round(num));
+// ============================================================
+// AUTH
+// ============================================================
+function showAuth(mode) {
+    app.authMode = mode;
+    document.getElementById('authTitle').textContent = mode === 'login' ? 'ورود به حساب' : 'ثبت‌نام رایگان';
+    document.getElementById('authBtnText').textContent = mode === 'login' ? 'ورود' : 'ثبت‌نام';
+    document.getElementById('switchAuthLink').textContent = mode === 'login' ? 'ثبت‌نام نکرده‌اید؟' : 'قبلاً ثبت‌نام کرده‌اید؟';
+    document.getElementById('email').value = '';
+    document.getElementById('pass').value = '';
+    document.getElementById('authMsg').innerHTML = '';
+    document.getElementById('authModal').classList.add('show');
+}
+function switchAuthMode() { showAuth(app.authMode === 'login' ? 'register' : 'login'); }
+function doAuth() {
+    const email = document.getElementById('email').value.trim();
+    const pass = document.getElementById('pass').value;
+    const msg = document.getElementById('authMsg');
+    if (!email || !pass) { msg.innerHTML = '<div class="error">❌ لطفاً ایمیل و رمز عبور را وارد کنید</div>'; return; }
+    if (!email.includes('@')) { msg.innerHTML = '<div class="error">❌ ایمیل معتبر نیست</div>'; return; }
+    if (pass.length < 6) { msg.innerHTML = '<div class="error">❌ رمز عبور باید حداقل 6 کاراکتر باشد</div>'; return; }
+    const users = DB.getUsers();
+    if (app.authMode === 'register') {
+        if (users.find(u => u.email === email)) { msg.innerHTML = '<div class="error">❌ این ایمیل قبلاً ثبت شده است</div>'; return; }
+        const u = { email, password: pass, isPro: true, credit: 30, createdAt: new Date().toISOString() };
+        users.push(u); DB.saveUsers(users); DB.setCurrentUser(u);
+        app.user = u; app.isPro = true;
+        closeModal('authModal'); showNotification('✅ ثبت‌نام با موفقیت انجام شد!'); initDashboard();
+    } else {
+        const u = users.find(x => x.email === email && x.password === pass);
+        if (!u) { msg.innerHTML = '<div class="error">❌ ایمیل یا رمز عبور اشتباه است</div>'; return; }
+        u.isPro = true; DB.setCurrentUser(u); app.user = u; app.isPro = true;
+        const saved = DB.getPrices(); if (saved) app.prices = saved;
+        closeModal('authModal'); showNotification('✅ خوش آمدید!'); initDashboard();
     }
-
-    function calculate() {
-        const MESGHAL_DIVIDER = 9.5742;
-        const GRAM_PER_OUNCE = 31.1;
-        
-        const mesghalTheo = (prices.goldPrice * prices.usdRate) / MESGHAL_DIVIDER;
-        const diffMesghal = mesghalTheo - prices.mesghalMarket;
-        const mesghalPercent = ((diffMesghal / prices.mesghalMarket) * 100).toFixed(2);
-        
-        const geram18Theo = ((prices.goldPrice / GRAM_PER_OUNCE) * prices.usdRate) * 0.75;
-        const diffGeram18 = geram18Theo - prices.geram18Market;
-        const geram18Percent = ((diffGeram18 / prices.geram18Market) * 100).toFixed(2);
-        
-        const gsRatio = (prices.goldPrice / prices.silverPrice).toFixed(2);
-        
-        return { mesghalTheo, diffMesghal, mesghalPercent, geram18Theo, diffGeram18, geram18Percent, gsRatio };
+}
+function logout() {
+    if (confirm('آیا می‌خواهید از حساب خود خارج شوید؟')) {
+        DB.logout(); app.user = null; app.isPro = false;
+        document.getElementById('welcomeScreen').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('sidebar').classList.add('hidden');
+        showNotification('خروج موفق');
     }
+}
+function initDashboard() {
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('sidebar').classList.remove('hidden');
+    updateUserInfo();
+    calculateSignals();   // ✅ محاسبه سیگنال‌ها هنگام شروع
+    renderPage();
+}
+function updateUserInfo() {
+    document.getElementById('userInfo').innerHTML = `
+        <div class="user-email">${app.user?.email || 'مهمان'}</div>
+        <div class="user-status">⭐ افتتاحیه - پرو رایگان</div>`;
+}
 
-    function showErrorPage(message) {
-        document.getElementById('app').innerHTML = `
-            <div class="card">
-                <div class="error">
-                    <h2>⚠️ خطا</h2>
-                    <p style="margin: 1rem 0;">${message}</p>
-                    <button class="btn btn-green" onclick="window.location.reload()">🔄 تلاش مجدد</button>
-                </div>
-            </div>
-        `;
-    }
+// ============================================================
+// PAGE SWITCHING
+// ============================================================
+function switchPage(page) {
+    app.currentPage = page;
+    document.querySelectorAll('.nav-item').forEach(i => { i.classList.remove('active'); if (i.dataset.page === page) i.classList.add('active'); });
+    const titles = { prices:'قیمت‌های زنده', analysis:'تحلیل‌های حرفه‌ای', signals:'سیگنال‌های پیشنهادی', calculator:'ماشین حساب طلا', settings:'تنظیمات' };
+    document.getElementById('pageTitle').textContent = titles[page] || page;
+    renderPage();
+    if (window.innerWidth <= 968) document.getElementById('sidebar').classList.remove('show');
+}
 
-    function renderWelcomePage() {
-        const calc = calculate();
-        
-        document.getElementById('app').innerHTML = `
-            <div class="header">
-                <h1>💎 گلدیار پرو</h1>
-                <div>
-                    <button class="btn btn-green" onclick="window.showModal('login')">ورود</button>
-                    <button class="btn btn-yellow" onclick="window.showModal('register')">ثبت‌نام</button>
-                </div>
-            </div>
-            
-            <div class="welcome">
-                <h2>به گلدیار خوش آمدید</h2>
-                <p style="color: #9ca3af; margin-bottom: 2rem;">
-                    تحلیل هوشمند بازار طلا<br>
-                    برای دسترسی کامل، لطفا وارد شوید
-                </p>
-                <button class="btn btn-green" onclick="window.showModal('register')" style="padding: 1rem 2rem; font-size: 1.1rem;">
-                    🚀 شروع رایگان
-                </button>
-            </div>
+// ============================================================
+// FETCH LIVE PRICES
+// ============================================================
+async function fetchLivePrices() {
+    showNotification('در حال دریافت قیمت‌های جدید...', 'info');
+    try {
+        const res = await fetch(WORKER_API_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('خطا');
+        const data = await res.json();
+        console.log('📊 داده دریافتی:', data);
+        let updated = false;
+        const map = { 'انس_طلا':'goldPrice', 'انس_نقره':'silverPrice', 'دلار':'usdRate', 'مثقال_طلا':'mesghalMarket', 'طلای_18_عیار':'geram18Market', 'سکه_تمام':'coinPrice', 'بورس_تهران':'bourse', 'نفت_برنت':'brent', 'تتر':'tether', 'بیت_کوین':'btc' };
+        const cellMap = { goldPrice:'gold-price', silverPrice:'silver-price', usdRate:'usd-price', mesghalMarket:'mesghal-price', geram18Market:'gold18-price', coinPrice:'coin-price', bourse:'bourse-price', brent:'brent-price', tether:'tether-price', btc:'btc-price' };
+        const divBy10 = ['usdRate','mesghalMarket','geram18Market','coinPrice','tether'];
 
-            <div style="opacity: 0.5; pointer-events: none;">
-                <div class="price-grid">
-                    <div class="price-card">
-                        <div class="text-sm text-gray">🌍 انس طلا</div>
-                        <div class="price-value">${formatNumber(prices.goldPrice)}</div>
-                        <div class="text-sm text-gray">دلار</div>
-                    </div>
-                    <div class="price-card">
-                        <div class="text-sm text-gray">💵 دلار</div>
-                        <div class="price-value">${formatNumber(prices.usdRate)}</div>
-                        <div class="text-sm text-gray">تومان</div>
-                    </div>
-                    <div class="price-card">
-                        <div class="text-sm text-gray">⚖️ مثقال</div>
-                        <div class="price-value">${formatNumber(prices.mesghalMarket)}</div>
-                        <div class="text-sm text-gray">تومان</div>
-                    </div>
-                </div>
-            </div>
-
-            ${renderModals()}
-        `;
-    }
-
-    function renderDashboard() {
-        const calc = calculate();
-        
-        document.getElementById('app').innerHTML = `
-            <div class="header">
-                <div>
-                    <h1>💎 گلدیار</h1>
-                    ${isSubscribed ? '<span class="status-badge">⭐ PRO</span>' : ''}
-                </div>
-                <div>
-                    ${!isSubscribed ? '<button class="btn btn-yellow" onclick="window.showModal(\'subscribe\')">⭐ ارتقا</button>' : ''}
-                    <button class="btn btn-red" onclick="window.handleLogout()" style="margin-right: 0.5rem;">خروج</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="text-sm" style="color: #10b981;">
-                    ✅ ${currentUser.email}
-                </div>
-                <div class="text-sm text-gray" style="margin-top: 0.25rem;">
-                    ${isSubscribed ? '⭐ اشتراک پرو فعال - قابلیت ویرایش فعال' : '📦 نسخه رایگان - برای ویرایش به پرو ارتقا دهید'}
-                </div>
-            </div>
-
-            <div class="price-grid">
-                ${renderPriceCard('🌍 انس طلا', prices.goldPrice, 'دلار', 'goldPrice')}
-                ${renderPriceCard('⚪ انس نقره', prices.silverPrice, 'دلار', 'silverPrice')}
-                ${renderPriceCard('💵 دلار', prices.usdRate, 'تومان', 'usdRate')}
-                ${renderPriceCard('⚖️ مثقال', prices.mesghalMarket, 'تومان', 'mesghalMarket')}
-                ${renderPriceCard('💍 18 عیار', prices.geram18Market, 'ت/گرم', 'geram18Market')}
-                ${renderPriceCard('🇦🇪 درهم', prices.dirhamRate, 'تومان', 'dirhamRate')}
-            </div>
-
-            ${renderAnalysisCard('📊 تحلیل مثقال', prices.mesghalMarket, calc.mesghalTheo, calc.diffMesghal, calc.mesghalPercent)}
-            ${renderAnalysisCard('📊 تحلیل 18 عیار', prices.geram18Market, calc.geram18Theo, calc.diffGeram18, calc.geram18Percent)}
-
-            <div class="card">
-                <h3>📊 نسبت طلا به نقره (G/S)</h3>
-                <div class="price-value" style="font-size: 2rem;">${calc.gsRatio}</div>
-                <div class="text-sm text-gray">هر اونس طلا = ${calc.gsRatio} اونس نقره</div>
-            </div>
-
-            ${renderModals()}
-        `;
-    }
-
-    function renderPriceCard(title, value, unit, key) {
-        if (isSubscribed) {
-            return `
-                <div class="price-card">
-                    <div class="text-sm text-gray">${title}</div>
-                    <div class="price-value">${formatNumber(value)}</div>
-                    <div class="text-sm text-gray">${unit}</div>
-                    <button class="btn btn-yellow" onclick="window.editPrice('${key}', '${title}')" style="width: 100%; padding: 0.4rem; margin-top: 0.5rem; font-size: 0.8rem;">
-                        ✏️ ویرایش
-                    </button>
-                </div>
-            `;
-        } else {
-            return `
-                <div class="price-card">
-                    <div class="text-sm text-gray">${title}</div>
-                    <div class="price-value">${formatNumber(value)}</div>
-                    <div class="text-sm text-gray">${unit}</div>
-                    <button class="btn btn-disabled" onclick="window.showModal('subscribe')" style="width: 100%; padding: 0.4rem; margin-top: 0.5rem; font-size: 0.8rem;">
-                        🔒 قفل
-                    </button>
-                </div>
-            `;
-        }
-    }
-
-    function renderAnalysisCard(title, market, theo, diff, percent) {
-        return `
-            <div class="card">
-                <h3>${title}</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <div>
-                        <div class="text-sm text-gray">قیمت بازار</div>
-                        <div style="font-weight: bold; margin-top: 0.25rem;">${formatNumber(market)}</div>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray">قیمت تئوری</div>
-                        <div style="font-weight: bold; margin-top: 0.25rem;">${formatNumber(theo)}</div>
-                    </div>
-                </div>
-                <div style="background: rgba(251,191,36,0.1); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(251,191,36,0.3);">
-                    <div class="text-sm text-gray" style="margin-bottom: 0.5rem;">اختلاف: ${percent}%</div>
-                    <div style="font-size: 1.5rem; font-weight: bold; color: #fbbf24;">${formatNumber(Math.abs(diff))}</div>
-                </div>
-            </div>
-        `;
-    }
-
-    function renderModals() {
-        return `
-            <div id="authModal" class="modal">
-                <div class="modal-content">
-                    <h2 id="authTitle">ورود</h2>
-                    <input type="email" id="authEmail" placeholder="ایمیل" autocomplete="email">
-                    <input type="password" id="authPassword" placeholder="رمز عبور (حداقل ۶ کاراکتر)" minlength="6" autocomplete="current-password">
-                    <div id="authError" class="error" style="display: none;"></div>
-                    <button class="btn btn-green" onclick="window.handleAuth()" id="authBtn" style="width: 100%; margin-top: 1rem;">
-                        تایید
-                    </button>
-                    <button class="btn" onclick="window.closeModal()" style="width: 100%; margin-top: 0.5rem; background: #334155; color: white;">
-                        انصراف
-                    </button>
-                </div>
-            </div>
-
-            <div id="subscribeModal" class="modal">
-                <div class="modal-content" style="background: linear-gradient(135deg, #78350f 0%, #92400e 100%); border: 2px solid #fbbf24;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 3rem;">⭐</div>
-                        <h2 style="margin: 1rem 0;">گلدیار پرو</h2>
-                        <p style="color: #fcd34d; margin-bottom: 1.5rem;">امکان ویرایش تمام قیمت‌ها</p>
-                        <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
-                            <div style="font-size: 2rem; font-weight: bold;">۹۹,۰۰۰ تومان</div>
-                            <div style="color: #fcd34d; font-size: 0.9rem;">ماهانه</div>
-                        </div>
-                        <button class="btn" onclick="window.activateSubscription()" style="width: 100%; background: white; color: #78350f; font-size: 1rem; padding: 1rem; font-weight: bold;">
-                            🚀 فعال‌سازی پرو
-                        </button>
-                        <button class="btn" onclick="window.closeModal()" style="width: 100%; margin-top: 0.5rem; background: transparent; color: #fcd34d; border: 1px solid #fcd34d;">
-                            بستن
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    let currentModalType = '';
-
-    window.showModal = function(type) {
-        currentModalType = type;
-        
-        if (type === 'login' || type === 'register') {
-            document.getElementById('authTitle').textContent = type === 'login' ? '👋 ورود' : '🎉 ثبت‌نام';
-            document.getElementById('authError').style.display = 'none';
-            document.getElementById('authModal').classList.add('show');
-        } else if (type === 'subscribe') {
-            document.getElementById('subscribeModal').classList.add('show');
-        }
-    };
-
-    window.closeModal = function() {
-        document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
-    };
-
-    window.handleAuth = async function() {
-        const email = document.getElementById('authEmail').value.trim();
-        const password = document.getElementById('authPassword').value;
-        const errorDiv = document.getElementById('authError');
-        const btn = document.getElementById('authBtn');
-        
-        if (!email || !password) {
-            errorDiv.textContent = '❌ لطفا ایمیل و رمز عبور را وارد کنید';
-            errorDiv.style.display = 'block';
-            return;
-        }
-        
-        if (password.length < 6) {
-            errorDiv.textContent = '❌ رمز عبور باید حداقل ۶ کاراکتر باشد';
-            errorDiv.style.display = 'block';
-            return;
-        }
-        
-        btn.textContent = '⏳ لطفا صبر کنید...';
-        btn.disabled = true;
-        errorDiv.style.display = 'none';
-        
-        try {
-            if (currentModalType === 'register') {
-                const { error } = await supabaseClient.auth.signUp({ email, password });
-                if (error) throw error;
-                alert('✅ ثبت‌نام موفق! در حال ورود...');
-            } else {
-                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-            }
-            window.closeModal();
-        } catch (err) {
-            console.error('Auth error:', err);
-            errorDiv.textContent = '❌ ' + err.message;
-            errorDiv.style.display = 'block';
-        } finally {
-            btn.textContent = 'تایید';
-            btn.disabled = false;
-        }
-    };
-
-    window.handleLogout = async function() {
-        if (confirm('آیا می‌خواهید خارج شوید؟')) {
-            await supabaseClient.auth.signOut();
-        }
-    };
-
-    window.activateSubscription = async function() {
-        if (!currentUser) return;
-        
-        try {
-            const { error } = await supabaseClient
-                .from('profiles')
-                .update({ is_subscribed: true })
-                .eq('id', currentUser.id);
-            
-            if (error) throw error;
-            
-            isSubscribed = true;
-            window.closeModal();
-            renderDashboard();
-            alert('🎉 اشتراک پرو فعال شد!');
-        } catch (err) {
-            alert('خطا: ' + err.message);
-        }
-    };
-
-    window.editPrice = function(key, title) {
-        const currentValue = prices[key];
-        const newValue = prompt(`قیمت جدید ${title}:`, currentValue);
-        
-        if (newValue) {
-            const num = parseFloat(newValue.replace(/,/g, ''));
-            if (!isNaN(num) && num > 0) {
-                prices[key] = num;
-                renderDashboard();
-            } else {
-                alert('❌ لطفا یک عدد معتبر وارد کنید');
+        for (const [key, field] of Object.entries(map)) {
+            if (data[key]?.price) {
+                app.prices[field] = data[key].price;
+                updateTableCell(cellMap[field], formatNumber(divBy10.includes(field) ? data[key].price / 10 : data[key].price));
+                updated = true;
             }
         }
-    };
+        // Silver and Dirham come from API now
+        // Dirham calc
+        if (app.prices.usdRate) {
+            app.prices.dirhamRate = Math.round(app.prices.usdRate * 0.272);
+            updateTableCell('dirham-price', formatNumber(app.prices.dirhamRate / 10));
+        }
+        updateTableCell('gold18uae-price', formatNumber(app.prices.gold18UAE));
 
-    async function init() {
-        console.log('🚀 Initializing app...');
-        
-        if (!hasValidKeys) {
-            showErrorPage('⚠️ کلیدهای Supabase وارد نشده است.<br><br>لطفا در کد HTML (خط 100-101)، کلیدهای خود را جایگزین کنید.');
-            return;
-        }
-        
-        if (typeof window.supabase === 'undefined') {
-            showErrorPage('⚠️ کتابخانه Supabase لود نشد.<br><br>لطفا اتصال اینترنت خود را بررسی کنید.');
-            return;
-        }
-        
-        try {
-            console.log('🔌 Connecting to Supabase...');
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase connected');
-            
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            
-            if (session?.user) {
-                currentUser = session.user;
-                console.log('✅ User logged in:', currentUser.email);
-                
-                try {
-                    const { data: profile } = await supabaseClient
-                        .from('profiles')
-                        .select('is_subscribed')
-                        .eq('id', currentUser.id)
-                        .single();
-                    isSubscribed = profile?.is_subscribed || false;
-                    console.log('✅ Subscription:', isSubscribed);
-                } catch (err) {
-                    console.warn('⚠️ Profile error:', err);
-                }
-                
-                renderDashboard();
-            } else {
-                console.log('ℹ️ No user logged in');
-                renderWelcomePage();
-            }
-            
-            supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                console.log('🔔 Auth changed:', event);
-                
-                if (session?.user) {
-                    currentUser = session.user;
-                    try {
-                        const { data: profile } = await supabaseClient
-                            .from('profiles')
-                            .select('is_subscribed')
-                            .eq('id', currentUser.id)
-                            .single();
-                        isSubscribed = profile?.is_subscribed || false;
-                    } catch (err) {
-                        isSubscribed = false;
-                    }
-                    renderDashboard();
-                } else {
-                    currentUser = null;
-                    isSubscribed = false;
-                    renderWelcomePage();
-                }
-            });
-            
-        } catch (err) {
-            console.error('❌ Init error:', err);
-            showErrorPage('⚠️ خطا در اتصال: ' + err.message);
-        }
+        if (updated) {
+            DB.savePrices(app.prices);
+            app.priceHistory.push({ timestamp: Date.now(), ...app.prices });
+            if (app.priceHistory.length > 50) app.priceHistory = app.priceHistory.slice(-50);
+
+            let dateStr = '', timeStr = '';
+            if (data['آخرین_بروزرسانی']) { dateStr = data['آخرین_بروزرسانی'].jalali_date || ''; timeStr = data['آخرین_بروزرسانی'].jalali_time || ''; }
+            if (!dateStr) dateStr = new Date().toLocaleDateString('fa-IR', { year:'numeric', month:'long', day:'numeric' });
+            if (!timeStr) timeStr = new Date().toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+            const te = document.getElementById('lastUpdateTime');
+            if (te) te.innerHTML = `📡 آخرین به‌روزرسانی: <strong style="color:var(--accent-gold);">${dateStr}</strong> ساعت <strong style="color:var(--accent-gold);">${timeStr}</strong>`;
+
+            calculateSignals();   // ✅ محاسبه سیگنال‌ها بعد از update
+            showNotification('✅ قیمت‌ها به‌روزرسانی شد');
+            if (app.currentPage === 'prices') setTimeout(renderCharts, 100);
+            if (app.currentPage === 'signals') renderPage();   // ✅ refresh signals page
+        } else { showNotification('⚠️ داده جدیدی دریافت نشد', 'error'); }
+    } catch (e) { console.error(e); showNotification('❌ خطا در اتصال به سرور', 'error'); }
+}
+
+function updateTableCell(id, value) {
+    const c = document.getElementById(id);
+    if (c) { c.style.background = 'rgba(251,191,36,0.3)'; c.textContent = value; setTimeout(() => c.style.background = '', 600); }
+}
+
+// ============================================================
+// PRICE EDIT
+// ============================================================
+function showEditPrice(key, title, val, unit) {
+    app.editingPrice = { key, title, unit };
+    document.getElementById('editPriceTitle').textContent = `ویرایش ${title}`;
+    document.getElementById('currentPriceInfo').innerHTML = `<strong>قیمت فعلی:</strong> ${formatNumber(val)} ${unit}`;
+    document.getElementById('newPrice').value = val;
+    document.getElementById('editPriceModal').classList.add('show');
+}
+function saveEditedPrice() {
+    const v = parseFloat(document.getElementById('newPrice').value);
+    if (!v || v <= 0 || isNaN(v)) { showNotification('❌ قیمت معتبر نیست', 'error'); return; }
+    app.prices[app.editingPrice.key] = v;
+    DB.savePrices(app.prices);
+    closeModal('editPriceModal');
+    showNotification(`✅ ${app.editingPrice.title} به‌روزرسانی شد`);
+    calculateSignals();
+    renderPage();
+}
+
+// ============================================================
+// CALCULATE (تحلیل)
+// ============================================================
+function calculate() {
+    const p = app.prices;
+    const mesghalTheo = (p.goldPrice * p.usdRate) / 9.5742;
+    const diffMesghal = mesghalTheo - p.mesghalMarket;
+    const mesghalPercent = p.mesghalMarket ? ((diffMesghal / p.mesghalMarket) * 100).toFixed(2) : '0';
+
+    const geram18Theo1 = ((p.goldPrice / 31.1035) * p.usdRate) * 0.75;
+    const geram18Theo2 = (p.goldPrice * p.usdRate / 31.103) * 0.750;
+    const geram18Theo3 = (p.goldPrice * p.usdRate) / 41.4265;
+    const geram18Avg = (geram18Theo1 + geram18Theo2 + geram18Theo3) / 3;
+    const diffGeram18 = geram18Avg - p.geram18Market;
+
+    const coinRatio = p.geram18Market ? (p.coinPrice / p.geram18Market).toFixed(2) : '0';
+    const coinSignal = coinRatio <= 9.7 ? 'buy_coin' : coinRatio >= 11.3 ? 'buy_gold' : 'hold';
+    const gsRatio = p.silverPrice ? (p.goldPrice / p.silverPrice).toFixed(2) : '0';
+
+    const realUsdPrice = p.goldPrice ? (p.geram18Market / p.goldPrice) * 41.5 : 0;
+    const usdDiff = realUsdPrice - p.usdRate;
+    const usdSignal = usdDiff > 20000000 ? 'negative_bubble' : usdDiff < -20000000 ? 'positive_bubble' : 'normal';
+
+    const dirhamUsdCalc = p.dirhamRate * 3.67;
+    const dirhamUsdDiff = dirhamUsdCalc - p.usdRate;
+    const dirhamUsdSignal = Math.abs(dirhamUsdDiff) > 10000000 ? (dirhamUsdDiff > 0 ? 'expensive' : 'cheap') : 'normal';
+
+    const uaeGold18Calc = p.dirhamRate * p.gold18UAE;
+    const uaeGoldDiff = uaeGold18Calc - p.geram18Market;
+
+    let uaeGoldSignal = 'normal', uaeGoldSignalText = 'وضعیت عادی';
+    if (uaeGoldDiff > 9000000)       { uaeGoldSignal = 'best_buy_iran';  uaeGoldSignalText = '🟢 بهترین موقعیت خرید از ایران'; }
+    else if (uaeGoldDiff > 7000000)  { uaeGoldSignal = 'good_buy_iran';  uaeGoldSignalText = '🟢 موقعیت خرید از ایران'; }
+    else if (uaeGoldDiff > 3500000)  { uaeGoldSignal = 'step_buy';       uaeGoldSignalText = '🟡 موقعیت خرید پله‌ای'; }
+    else if (uaeGoldDiff < -9000000) { uaeGoldSignal = 'best_sell_iran'; uaeGoldSignalText = '🔴 بهترین موقعیت فروش از ایران'; }
+    else if (uaeGoldDiff < -7000000) { uaeGoldSignal = 'good_sell_iran'; uaeGoldSignalText = '🔴 موقعیت فروش از ایران'; }
+    else if (uaeGoldDiff < -3500000) { uaeGoldSignal = 'step_sell';      uaeGoldSignalText = '🟡 موقعیت فروش پله‌ای'; }
+
+    return { mesghalTheo, diffMesghal, mesghalPercent, geram18Theo1, geram18Theo2, geram18Theo3, geram18Avg, diffGeram18, coinRatio, coinSignal, gsRatio, realUsdPrice, usdDiff, usdSignal, dirhamUsdCalc, dirhamUsdDiff, dirhamUsdSignal, uaeGold18Calc, uaeGoldDiff, uaeGoldSignal, uaeGoldSignalText };
+}
+
+// ============================================================
+// ✅ CALCULATE SIGNALS — این تابع قبلاً نداشتید!
+// ============================================================
+function calculateSignals() {
+    app.signals = [];
+    const c = calculate();
+    const p = app.prices;
+
+    // --- مثقال ---
+    if (c.diffMesghal > 10000000) {
+        app.signals.push({ type:'buy', priority:'high', title:'🟢 بهترین موقعیت خرید مثقال طلا', description:`قیمت تئوری ${formatNumber(c.mesghalTheo/10)} تومان، بازار ${formatNumber(p.mesghalMarket/10)} تومان — اختلاف ${formatNumber(Math.abs(c.diffMesghal)/10)} تومان` });
+    } else if (c.diffMesghal > 5000000) {
+        app.signals.push({ type:'buy', priority:'medium', title:'🟡 موقعیت خرید متوسط مثقال طلا', description:`اختلاف قیمت تئوری و بازار: ${formatNumber(Math.abs(c.diffMesghal)/10)} تومان` });
+    } else if (c.diffMesghal < -10000000) {
+        app.signals.push({ type:'sell', priority:'high', title:'🔴 موقعیت فروش مثقال طلا', description:`بازار ${formatNumber(Math.abs(c.diffMesghal)/10)} تومان بالاتر از قیمت تئوری` });
+    } else if (c.diffMesghal < -5000000) {
+        app.signals.push({ type:'sell', priority:'medium', title:'🔴 موقعیت فروش متوسط مثقال', description:`بازار ${formatNumber(Math.abs(c.diffMesghal)/10)} تومان بالاتر از تئوری` });
     }
 
-    window.addEventListener('load', () => {
-        console.log('✅ Page loaded');
-        setTimeout(init, 500);
+    // --- طلای 18 ---
+    if (c.diffGeram18 > 3000000) {
+        app.signals.push({ type:'buy', priority:'high', title:'🟢 بهترین موقعیت خرید طلای 18 عیار', description:`میانگین 3 الگوریتم: ${formatNumber(c.geram18Avg/10)} تومان، بازار: ${formatNumber(p.geram18Market/10)} تومان` });
+    } else if (c.diffGeram18 > 1000000) {
+        app.signals.push({ type:'buy', priority:'medium', title:'🟡 موقعیت خرید متوسط طلای 18', description:`اختلاف: ${formatNumber(Math.abs(c.diffGeram18)/10)} تومان` });
+    } else if (c.diffGeram18 < -3000000) {
+        app.signals.push({ type:'sell', priority:'high', title:'🔴 موقعیت فروش طلای 18 عیار', description:`بازار ${formatNumber(Math.abs(c.diffGeram18)/10)} تومان بالاتر از میانگین الگوریتم‌ها` });
+    }
+
+    // --- سکه/طلا ---
+    if (c.coinSignal === 'buy_coin') {
+        app.signals.push({ type:'buy', priority:'high', title:'🟢 خرید سکه - نسبت پایین', description:`نسبت سکه به طلا: ${c.coinRatio} (کمتر از ۹.۷ = فرصت خرید سکه)` });
+    } else if (c.coinSignal === 'buy_gold') {
+        app.signals.push({ type:'sell', priority:'medium', title:'🔴 فروش سکه / خرید طلا', description:`نسبت سکه به طلا: ${c.coinRatio} (بیشتر از ۱۱.۳ = سکه گران)` });
+    }
+
+    // --- طلا/نقره ---
+    if (parseFloat(c.gsRatio) < 60) {
+        app.signals.push({ type:'buy', priority:'low', title:'🔵 نقره نسبتاً ارزان است', description:`نسبت طلا به نقره: ${c.gsRatio} (کمتر از ۶۰)` });
+    } else if (parseFloat(c.gsRatio) > 80) {
+        app.signals.push({ type:'buy', priority:'low', title:'🔵 نقره فرصت خرید دارد', description:`نسبت طلا به نقره: ${c.gsRatio} (بیشتر از ۸۰ = نقره ارزان)` });
+    }
+
+    // --- دلار واقعی ---
+    if (c.usdSignal === 'negative_bubble') {
+        app.signals.push({ type:'buy', priority:'high', title:'🟢 حباب منفی - فرصت خرید طلا', description:'دلار بیش از حد گران است. قیمت واقعی دلار از طلا کمتر است.' });
+    } else if (c.usdSignal === 'positive_bubble') {
+        app.signals.push({ type:'sell', priority:'high', title:'🔴 حباب مثبت - احتیاط کنید', description:'دلار بیش از حد ارزان است نسبت به طلا.' });
+    }
+
+    // --- درهم / دلار ---
+    if (c.dirhamUsdSignal === 'expensive') {
+        app.signals.push({ type:'sell', priority:'medium', title:'🔴 دلار گران است از درهم', description:`دلار محاسبه شده از درهم: ${formatNumber(c.dirhamUsdCalc/10)} تومان` });
+    } else if (c.dirhamUsdSignal === 'cheap') {
+        app.signals.push({ type:'buy', priority:'medium', title:'🟢 دلار ارزان است از درهم', description:`دلار محاسبه شده از درهم: ${formatNumber(c.dirhamUsdCalc/10)} تومان` });
+    }
+
+    // --- طلای امارات ---
+    if (c.uaeGoldDiff > 9000000) {
+        app.signals.push({ type:'buy', priority:'high', title:'🟢 موقعیت عالی خرید طلا از ایران', description:`طلای امارات ${formatNumber(Math.abs(c.uaeGoldDiff)/10)} تومان گران‌تر از ایران` });
+    } else if (c.uaeGoldDiff > 7000000) {
+        app.signals.push({ type:'buy', priority:'medium', title:'🟡 موقعیت خرید طلا از ایران', description:`طلای امارات ${formatNumber(Math.abs(c.uaeGoldDiff)/10)} تومان گران‌تر` });
+    } else if (c.uaeGoldDiff > 3500000) {
+        app.signals.push({ type:'buy', priority:'low', title:'🔵 خرید پله‌ای طلا از ایران', description:`اختلاف: ${formatNumber(Math.abs(c.uaeGoldDiff)/10)} تومان` });
+    } else if (c.uaeGoldDiff < -9000000) {
+        app.signals.push({ type:'sell', priority:'high', title:'🔴 موقعیت فروش طلا به امارات', description:`ایران ${formatNumber(Math.abs(c.uaeGoldDiff)/10)} تومان گران‌تر` });
+    } else if (c.uaeGoldDiff < -3500000) {
+        app.signals.push({ type:'sell', priority:'medium', title:'🔴 فروش طلا به امارات', description:`اختلاف: ${formatNumber(Math.abs(c.uaeGoldDiff)/10)} تومان` });
+    }
+
+    // Sort: high first
+    const order = { high:0, medium:1, low:2 };
+    app.signals.sort((a, b) => (order[a.priority] || 2) - (order[b.priority] || 2));
+}
+
+// ============================================================
+// RENDER PAGE ROUTER
+// ============================================================
+function renderPage() {
+    const content = document.getElementById('pageContent');
+    if (app.currentPage === 'prices')      { content.innerHTML = renderPricesPage();    setTimeout(renderCharts, 100); }
+    else if (app.currentPage === 'analysis') { content.innerHTML = renderAnalysisPage(); }
+    else if (app.currentPage === 'signals')  { content.innerHTML = renderSignalsPage();  }
+    else if (app.currentPage === 'calculator') { content.innerHTML = renderCalculatorPage(); }
+    else if (app.currentPage === 'settings')   { content.innerHTML = renderSettingsPage();  }
+}
+
+// ============================================================
+// RENDER: PRICES PAGE
+// ============================================================
+function renderPricesPage() {
+    const eb = (key, title, val, unit) => app.isPro
+        ? `<button class="edit-btn" onclick="showEditPrice('${key}','${title}',${val},'${unit}')" style="padding:0.4rem 0.8rem;font-size:0.8rem;">✏️ ویرایش</button>`
+        : `<button class="edit-btn" disabled style="padding:0.4rem 0.8rem;font-size:0.8rem;">🔒 قفل</button>`;
+
+    const rows = [
+        ['📊','بورس تهران','bourse-price',app.prices.bourse,1,'واحد','bourse','بورس تهران','واحد'],
+        ['🌍','انس طلا جهانی','gold-price',app.prices.goldPrice,1,'دلار','goldPrice','انس طلا','دلار'],
+        ['⚪','انس نقره جهانی','silver-price',app.prices.silverPrice,1,'دلار','silverPrice','انس نقره','دلار'],
+        ['⚖️','مثقال طلا','mesghal-price',app.prices.mesghalMarket,10,'تومان','mesghalMarket','مثقال','ریال'],
+        ['💍','طلای 18 عیار','gold18-price',app.prices.geram18Market,10,'تومان/گرم','geram18Market','طلای 18','ریال'],
+        ['🪙','سکه تمام بهار آزادی','coin-price',app.prices.coinPrice,10,'تومان','coinPrice','سکه','ریال'],
+        ['💵','دلار آمریکا','usd-price',app.prices.usdRate,10,'تومان','usdRate','دلار','ریال'],
+        ['💎','تتر (USDT)','tether-price',app.prices.tether,10,'تومان','tether','تتر','ریال'],
+        ['🛢️','نفت برنت','brent-price',app.prices.brent,1,'دلار/بشکه','brent','نفت برنت','دلار'],
+        ['₿','بیت‌کوین','btc-price',app.prices.btc,1,'دلار','btc','بیت‌کوین','دلار'],
+        ['🇦🇪','درهم امارات','dirham-price',app.prices.dirhamRate,10,'تومان','dirhamRate','درهم','ریال'],
+        ['🇦🇪','طلای 18 امارات','gold18uae-price',app.prices.gold18UAE,1,'درهم/گرم','gold18UAE','طلای 18 امارات','درهم']
+    ];
+
+    let tableRows = rows.map(([icon,name,id,val,div,unit,key,title,editUnit]) => `
+        <tr style="border-bottom:1px solid var(--border-color);transition:background 0.3s;" onmouseover="this.style.background='rgba(251,191,36,0.05)'" onmouseout="this.style.background='transparent'">
+            <td style="padding:1.2rem;font-weight:500;"><span style="font-size:1.3rem;margin-left:0.5rem;">${icon}</span>${name}</td>
+            <td style="padding:1.2rem;text-align:center;font-size:1.1rem;font-weight:bold;color:var(--accent-gold);" id="${id}">${formatNumber(val/div)}</td>
+            <td style="padding:1.2rem;text-align:center;color:var(--text-secondary);">${unit}</td>
+            ${app.isPro ? `<td style="padding:1.2rem;text-align:center;">${eb(key,title,val,editUnit)}</td>` : ''}
+        </tr>`).join('');
+
+    return `
+        <div style="margin-bottom:2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <button class="btn btn-primary" onclick="fetchLivePrices()"><span>🔄</span><span>به‌روزرسانی قیمت‌ها</span></button>
+            <div style="color:var(--text-secondary);font-size:0.9rem;" id="lastUpdateTime">📡 منبع: tgju.org</div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+            <div style="padding:1.5rem;border-bottom:2px solid var(--border-color);background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05));">
+                <h3 style="margin:0;display:flex;align-items:center;gap:0.75rem;"><span style="font-size:1.5rem;">💰</span><span>جدول قیمت‌های لحظه‌ای بازار</span></h3>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead><tr style="background:var(--bg-card);border-bottom:2px solid var(--border-color);">
+                        <th style="padding:1.2rem;text-align:right;font-weight:600;color:var(--accent-gold);">شاخص</th>
+                        <th style="padding:1.2rem;text-align:center;font-weight:600;color:var(--accent-gold);">قیمت</th>
+                        <th style="padding:1.2rem;text-align:center;font-weight:600;color:var(--accent-gold);">واحد</th>
+                        ${app.isPro ? '<th style="padding:1.2rem;text-align:center;font-weight:600;color:var(--accent-gold);">عملیات</th>' : ''}
+                    </tr></thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+        </div>
+
+        <h3 style="margin:2rem 0 1rem;color:var(--accent-gold);">📊 نمای سریع با نمودار</h3>
+        <div class="cards-grid">
+            ${[['🌍','انس طلا',app.prices.goldPrice,'دلار','goldChart'],['⚪','انس نقره',app.prices.silverPrice,'دلار','silverChart'],['💵','دلار',app.prices.usdRate/10,'تومان','usdChart'],['🪙','سکه',app.prices.coinPrice/10,'تومان','coinChart'],['💍','طلای 18',app.prices.geram18Market/10,'تومان/گرم','gold18Chart'],['⚖️','مثقال',app.prices.mesghalMarket/10,'تومان','mesghalChart'],['💎','تتر',app.prices.tether/10,'تومان','tetherChart'],['📊','بورس',app.prices.bourse,'واحد','bourseChart'],['🛢️','نفت برنت',app.prices.brent,'دلار','brentChart'],['₿','بیت‌کوین',app.prices.btc,'دلار','btcChart']].map(([icon,name,val,unit,cid]) => `
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="card-icon">${icon}</span><span>${name}</span></div></div>
+                <div class="price-value">${formatNumber(val)}</div>
+                <div class="price-label">${unit}</div>
+                <div class="chart-container"><canvas id="${cid}"></canvas></div>
+            </div>`).join('')}
+        </div>`;
+}
+
+// ============================================================
+// RENDER: ANALYSIS PAGE  (فقط یک نسخه — شبیه عکس شما)
+// ============================================================
+function renderAnalysisPage() {
+    const c = calculate();
+    const p = app.prices;
+
+    // Helper: signal box HTML
+    function signalBox(signal, text) {
+        const cls = { best_buy_iran:'signal-best-buy', good_buy_iran:'signal-good-buy', step_buy:'signal-caution', best_sell_iran:'signal-best-sell', normal:'signal-normal' };
+        return `<div class="${cls[signal] || 'signal-normal'}" style="margin-top:1rem;">${text}</div>`;
+    }
+
+    return `
+        <!-- تحلیل مثقال -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">⚖️</span><span class="analysis-title">تحلیل مثقال طلا</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">قیمت بازار</div><div class="price-box-value">${formatNumber(p.mesghalMarket/10)}</div><div class="price-box-unit">تومان</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">قیمت محاسبه شده</div><div class="price-box-value">${formatNumber(c.mesghalTheo/10)}</div><div class="price-box-unit">تومان</div></div>
+                </div>
+                <div class="difference-box">
+                    <div class="difference-left">
+                        <div class="difference-value-big ${c.diffMesghal >= 0 ? 'green' : 'red'}">${formatNumber(Math.abs(c.diffMesghal)/10)} ${c.diffMesghal >= 0 ? '↑' : '↓'}</div>
+                    </div>
+                    <div class="difference-right">اختلاف قیمت تئوری و بازار<br>${c.diffMesghal > 0 ? 'تئوری گران‌تر از بازار' : 'بازار گران‌تر از تئوری'}</div>
+                </div>
+                ${c.diffMesghal > 10000000 ? '<div class="signal-best-buy">🟢 بهترین موقعیت خرید مثقال</div>' :
+                  c.diffMesghal > 5000000  ? '<div class="signal-good-buy">🟡 موقعیت خرید متوسط مثقال</div>' :
+                  c.diffMesghal < -5000000 ? '<div class="signal-best-sell">🔴 موقعیت فروش مثقال</div>' :
+                  '<div class="signal-normal">➡️ وضعیت عادی</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>
+                    قیمت تئوری مثقال از فرمول انس طلا و نرخ دلار محاسبه می‌شود.<br>
+                    اگر بازار کمتر باشد → فرصت خرید | اگر بازار بیشتر باشد → فرصت فروش
+                </div>
+            </div>
+        </div>
+
+        <!-- تحلیل طلای 18 عیار -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">💍</span><span class="analysis-title">تحلیل طلای 18 عیار (3 الگوریتم)</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">قیمت بازار</div><div class="price-box-value">${formatNumber(p.geram18Market/10)}</div><div class="price-box-unit">تومان/گرم</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">میانگین 3 الگوریتم</div><div class="price-box-value">${formatNumber(c.geram18Avg/10)}</div><div class="price-box-unit">تومان/گرم</div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;margin:0.75rem 0;">
+                    <div class="price-box" style="padding:0.7rem;"><div class="price-box-label" style="font-size:0.75rem;">الگوریتم ۱</div><div style="font-size:1rem;font-weight:bold;color:var(--accent-gold);">${formatNumber(c.geram18Theo1/10)}</div></div>
+                    <div class="price-box" style="padding:0.7rem;"><div class="price-box-label" style="font-size:0.75rem;">الگوریتم ۲</div><div style="font-size:1rem;font-weight:bold;color:var(--accent-gold);">${formatNumber(c.geram18Theo2/10)}</div></div>
+                    <div class="price-box" style="padding:0.7rem;"><div class="price-box-label" style="font-size:0.75rem;">الگوریتم ۳</div><div style="font-size:1rem;font-weight:bold;color:var(--accent-gold);">${formatNumber(c.geram18Theo3/10)}</div></div>
+                </div>
+                <div class="difference-box">
+                    <div class="difference-left"><div class="difference-value-big ${c.diffGeram18 >= 0 ? 'green' : 'red'}">${formatNumber(Math.abs(c.diffGeram18)/10)} ${c.diffGeram18 >= 0 ? '↑' : '↓'}</div></div>
+                    <div class="difference-right">اختلاف میانگین الگوریتم‌ها و بازار</div>
+                </div>
+                ${c.diffGeram18 > 3000000 ? '<div class="signal-best-buy">🟢 بهترین موقعیت خرید طلای 18</div>' :
+                  c.diffGeram18 > 1000000 ? '<div class="signal-good-buy">🟡 موقعیت خرید متوسط</div>' :
+                  c.diffGeram18 < -3000000 ? '<div class="signal-best-sell">🔴 موقعیت فروش طلای 18</div>' :
+                  '<div class="signal-normal">➡️ وضعیت عادی</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>میانگین 3 فرمول مختلف محاسبه و مقایسه با قیمت بازار می‌شود.</div>
+            </div>
+        </div>
+
+        <!-- تحلیل طلای 18 امارات (شبیه عکس شما) -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">🇦🇪</span><span class="analysis-title">تحلیل قیمت طلای 18 عیار امارات (درهم)</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">قیمت بازار ایران</div><div class="price-box-value">${formatNumber(p.geram18Market/10)}</div><div class="price-box-unit">تومان</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">قیمت محاسبه شده</div><div class="price-box-value">${formatNumber(c.uaeGold18Calc/10)}</div><div class="price-box-unit">تومان</div></div>
+                </div>
+                <div class="difference-box">
+                    <div class="difference-left">
+                        <div class="difference-value-big ${c.uaeGoldDiff >= 0 ? 'green' : 'red'}">${formatNumber(Math.abs(c.uaeGoldDiff)/10)} ${c.uaeGoldDiff >= 0 ? '↑' : '↓'}</div>
+                    </div>
+                    <div class="difference-right">
+                        درهم امارات<br>
+                        <strong>${formatNumber(p.dirhamRate/10)}</strong> تومان &nbsp; | &nbsp; طلای 18 امارات: <strong>${formatNumber(p.gold18UAE)}</strong> درهم<br>
+                        اختلاف: طلای ${c.uaeGoldDiff > 0 ? 'امارات گران‌تر از ایران' : 'ایران گران‌تر از امارات'}
+                    </div>
+                </div>
+                ${c.uaeGoldDiff > 9000000  ? '<div class="signal-best-buy">🟢 موقعیت خرید از ایران<br><span style="font-size:0.9rem;font-weight:normal;">قیمت محاسبه شده امارات پایین‌تر از بازار ایران است → فرصت خرید خوب</span></div>' :
+                  c.uaeGoldDiff > 7000000  ? '<div class="signal-good-buy">🟢 موقعیت خرید از ایران</div>' :
+                  c.uaeGoldDiff > 3500000  ? '<div class="signal-caution">🟡 خرید پله‌ای از ایران</div>' :
+                  c.uaeGoldDiff < -9000000 ? '<div class="signal-best-sell">🔴 فروش طلا به امارات</div>' :
+                  '<div class="signal-normal">➡️ وضعیت عادی</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>
+                    اگر قیمت امارات پایین‌تر باشد → فرصت فروش از ایران<br>
+                    اگر بازار ایران بالاتر باشد → فرصت خرید دارد<br>
+                    سیگنال بر اساس اختلاف بیش از ۷۰۰ هزار تومان تنظیم شده است.
+                </div>
+            </div>
+        </div>
+
+        <!-- نسبت سکه/طلا -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">🪙</span><span class="analysis-title">نسبت سکه به طلا</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">نسبت فعلی</div><div class="price-box-value">${c.coinRatio}</div><div class="price-box-unit">سکه ÷ طلای 18</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">محدوده نرمال</div><div class="price-box-value">۹.۷ – ۱۱.۳</div><div class="price-box-unit">نسبت</div></div>
+                </div>
+                ${c.coinSignal === 'buy_coin' ? '<div class="signal-best-buy">🟢 خرید سکه - نسبت پایین</div>' : c.coinSignal === 'buy_gold' ? '<div class="signal-best-sell">🔴 خرید طلا - سکه گران</div>' : '<div class="signal-normal">➡️ نسبت متعادل</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>نسبت زیر ۹.۷ → سکه ارزان → خرید سکه | نسبت بالای ۱۱.۳ → سکه گران → خرید طلای خام</div>
+            </div>
+        </div>
+
+        <!-- نسبت طلا/نقره -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">⚪</span><span class="analysis-title">نسبت طلا به نقره (G/S Ratio)</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">نسبت فعلی</div><div class="price-box-value">${c.gsRatio}</div><div class="price-box-unit">طلا ÷ نقره</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">محدوده نرمال</div><div class="price-box-value">۶۰ – ۸۰</div><div class="price-box-unit">نسبت</div></div>
+                </div>
+                ${parseFloat(c.gsRatio) < 60 ? '<div class="signal-best-buy">🟢 نقره نسبتاً ارزان</div>' : parseFloat(c.gsRatio) > 80 ? '<div class="signal-caution">🟡 نسبت بالا - نقره ارزان‌تر</div>' : '<div class="signal-normal">➡️ نسبت متعادل</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>نسبت زیر ۶۰ → نقره ارزان است | نسبت بالای ۸۰ → فرصت خرید نقره دارد</div>
+            </div>
+        </div>
+
+        <!-- تحلیل دلار واقعی -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">💵</span><span class="analysis-title">قیمت واقعی دلار (از طلا)</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">دلار بازار</div><div class="price-box-value">${formatNumber(p.usdRate/10)}</div><div class="price-box-unit">تومان</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">دلار واقعی (از طلا)</div><div class="price-box-value">${formatNumber(c.realUsdPrice/10)}</div><div class="price-box-unit">تومان</div></div>
+                </div>
+                <div class="difference-box">
+                    <div class="difference-left"><div class="difference-value-big ${c.usdDiff >= 0 ? 'green' : 'red'}">${formatNumber(Math.abs(c.usdDiff)/10)} ${c.usdDiff >= 0 ? '↑' : '↓'}</div></div>
+                    <div class="difference-right">اختلاف دلار واقعی و بازار<br>${c.usdDiff > 0 ? 'دلار بازار کمتر از واقعی (حباب منفی)' : 'دلار بازار بیشتر از واقعی'}</div>
+                </div>
+                ${c.usdSignal === 'negative_bubble' ? '<div class="signal-best-buy">🟢 حباب منفی - فرصت خرید طلا</div>' : c.usdSignal === 'positive_bubble' ? '<div class="signal-best-sell">🔴 حباب مثبت - احتیاط کنید</div>' : '<div class="signal-normal">➡️ وضعیت عادی</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>قیمت واقعی دلار از نرخ طلای 18 و انس طلا محاسبه می‌شود و با دلار بازار مقایسه.</div>
+            </div>
+        </div>
+
+        <!-- تحلیل درهم -->
+        <div class="analysis-card">
+            <div class="analysis-header"><span class="analysis-icon">🇦🇪</span><span class="analysis-title">تحلیل درهم برای دلار</span></div>
+            <div class="analysis-body">
+                <div class="price-comparison">
+                    <div class="price-box green-border"><div class="price-box-label">دلار بازار</div><div class="price-box-value">${formatNumber(p.usdRate/10)}</div><div class="price-box-unit">تومان</div></div>
+                    <div class="price-box blue-border"><div class="price-box-label">دلار از درهم</div><div class="price-box-value">${formatNumber(c.dirhamUsdCalc/10)}</div><div class="price-box-unit">تومان</div></div>
+                </div>
+                ${c.dirhamUsdSignal === 'expensive' ? '<div class="signal-best-sell">🔴 دلار گران است از درهم</div>' : c.dirhamUsdSignal === 'cheap' ? '<div class="signal-best-buy">🟢 دلار ارزان است از درهم</div>' : '<div class="signal-normal">➡️ قیمت متعادل</div>'}
+                <div class="interpretation"><div class="interpretation-title">💡 توضیح روش:</div>نرخ درهم × ۳.۶۷ = قیمت دلار محاسبه شده و مقایسه با دلار بازار.</div>
+            </div>
+        </div>`;
+}
+
+// ============================================================
+// ✅ RENDER: SIGNALS PAGE
+// ============================================================
+function renderSignalsPage() {
+    if (app.signals.length === 0) calculateSignals();   // اگر هنوز محاسبه نشده
+
+    const cardClass = s => {
+        if (s.priority === 'high' && s.type === 'buy')  return 'high-buy';
+        if (s.priority === 'high' && s.type === 'sell') return 'high-sell';
+        if (s.priority === 'medium') return 'med';
+        return 'low';
+    };
+    const priorityText = { high:'اولویت بالا', medium:'اولویت متوسط', low:'اولویت پایین' };
+
+    let signalsHTML = '';
+    if (app.signals.length === 0) {
+        signalsHTML = `<div class="signal-card" style="text-align:center;padding:2.5rem;">
+            <div style="font-size:3rem;margin-bottom:1rem;">📊</div>
+            <div style="color:var(--text-secondary);font-size:1.1rem;">سیگنال‌های فعال نیست<br><span style="font-size:0.9rem;">قیمت‌ها را به‌روز کنید تا سیگنال‌ها نشان داده شود</span></div>
+            <button class="btn btn-primary" onclick="fetchLivePrices()" style="margin-top:1.5rem;"><span>🔄</span><span>به‌روزرسانی قیمت‌ها</span></button>
+        </div>`;
+    } else {
+        signalsHTML = app.signals.map(s => `
+            <div class="signal-card ${cardClass(s)}">
+                <div class="signal-card-header">
+                    <span class="signal-priority-badge ${s.priority}">${priorityText[s.priority]}</span>
+                    ${s.priority === 'high' ? '<span style="font-size:0.8rem;color:var(--text-secondary);">● چشمک زدن فعال</span>' : ''}
+                </div>
+                <div class="signal-card-title" style="color:${s.type==='buy'?'var(--accent-green)':s.type==='sell'?'var(--accent-red)':'var(--accent-gold)'};">${s.title}</div>
+                <div class="signal-card-desc">${s.description}</div>
+            </div>`).join('');
+    }
+
+    return `
+        <div class="disclaimer">
+            <div class="disclaimer-title">⚠️ سلب مسئولیت</div>
+            این سیگنال‌ها صرفاً جنبه اطلاع‌رسانی دارند و <strong>توصیه به خرید یا فروش نیستند</strong>.<br>
+            تصمیم‌گیری نهایی بر عهده شماست. قیمت‌های بازار هر لحظه تغییر می‌کنند.
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;">
+            <h3 style="color:var(--accent-gold);margin:0;">🎯 سیگنال‌های فعال (${app.signals.length})</h3>
+            <button class="btn btn-outline" onclick="fetchLivePrices()" style="font-size:0.85rem;padding:0.5rem 1rem;"><span>🔄</span><span>به‌روزرسانی</span></button>
+        </div>
+
+        <!-- فیلتر اولویت -->
+        <div style="display:flex;gap:0.6rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+            <span class="signal-priority-badge high" style="font-size:0.8rem;padding:0.3rem 0.7rem;cursor:pointer;">🔴 بالا (${app.signals.filter(s=>s.priority==='high').length})</span>
+            <span class="signal-priority-badge medium" style="font-size:0.8rem;padding:0.3rem 0.7rem;cursor:pointer;">🟡 متوسط (${app.signals.filter(s=>s.priority==='medium').length})</span>
+            <span class="signal-priority-badge low" style="font-size:0.8rem;padding:0.3rem 0.7rem;cursor:pointer;">🔵 پایین (${app.signals.filter(s=>s.priority==='low').length})</span>
+        </div>
+
+        ${signalsHTML}`;
+}
+
+// ============================================================
+// RENDER: CALCULATOR
+// ============================================================
+function renderCalculatorPage() {
+    return `
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="card-icon">🛒</span><span>محاسبه ارزش خام</span></div></div>
+                <label style="display:block;margin-bottom:0.5rem;font-weight:600;">وزن (گرم):</label>
+                <input type="number" id="rawWeight" value="10" step="0.1">
+                <button class="btn btn-primary" onclick="calculateRaw()" style="width:100%;margin-top:1.5rem;padding:1rem;">💰 محاسبه</button>
+                <div id="rawResult"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="card-icon">💎</span><span>محاسبه قیمت فروش</span></div></div>
+                <label style="display:block;margin-bottom:0.5rem;font-weight:600;">وزن (گرم):</label>
+                <input type="number" id="sellWeight" value="18.7" step="0.1">
+                <label style="display:block;margin-top:1rem;margin-bottom:0.5rem;font-weight:600;">اجرت (ریال):</label>
+                <input type="number" id="wage" value="1500000" step="10000">
+                <label style="display:block;margin-top:1rem;margin-bottom:0.5rem;font-weight:600;">سود (%):</label>
+                <input type="number" id="profit" value="7" step="0.1">
+                <label style="display:block;margin-top:1rem;margin-bottom:0.5rem;font-weight:600;">مالیات (%):</label>
+                <input type="number" id="tax" value="9" step="0.1">
+                <button class="btn btn-primary" onclick="calculateSell()" style="width:100%;margin-top:1.5rem;padding:1rem;">💎 محاسبه قیمت فروش</button>
+                <div id="sellResult"></div>
+            </div>
+        </div>`;
+}
+
+// ============================================================
+// RENDER: SETTINGS
+// ============================================================
+function renderSettingsPage() {
+    return `
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="card-icon">👤</span><span>اطلاعات حساب</span></div></div>
+                <div class="info-box"><strong>ایمیل:</strong> ${app.user?.email || 'مهمان'}<br><strong>وضعیت:</strong> ⭐ پرو فعال (افتتاحیه)<br><strong>اعتبار:</strong> رایگان</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="card-icon">⭐</span><span>مزایای پرو</span></div></div>
+                <div class="info-box"><strong>قابلیت‌های فعال:</strong><br>✅ ویرایش قیمت‌ها<br>✅ دسترسی به همه تحلیل‌ها<br>✅ سیگنال‌های هوشمند<br>✅ پشتیبانی اختصاصی</div>
+                <div class="success" style="margin-top:1rem;">✅ اشتراک پرو فعال است (افتتاحیه)</div>
+            </div>
+        </div>`;
+}
+
+// ============================================================
+// CALCULATOR FUNCTIONS
+// ============================================================
+function calculateRaw() {
+    const w = parseFloat(document.getElementById('rawWeight').value);
+    if (!w || w <= 0) { showNotification('وزن معتبر وارد کنید', 'error'); return; }
+    const price = w * app.prices.geram18Market * (740/750);
+    document.getElementById('rawResult').innerHTML = `<div class="market-value" style="margin-top:1.5rem;text-align:center;"><div style="font-size:2rem;font-weight:bold;color:var(--accent-gold);">${formatNumber(price)}</div><div style="color:var(--text-secondary);margin-top:0.5rem;">ریال</div></div>`;
+}
+function calculateSell() {
+    const w = parseFloat(document.getElementById('sellWeight').value);
+    const wage = parseFloat(document.getElementById('wage').value);
+    const prof = parseFloat(document.getElementById('profit').value);
+    const tax = parseFloat(document.getElementById('tax').value);
+    if (!w || w <= 0) { showNotification('وزن معتبر وارد کنید', 'error'); return; }
+    const gold = w * app.prices.geram18Market;
+    const profVal = (gold + wage) * (prof / 100);
+    const taxVal = (wage + profVal) * (tax / 100);
+    const total = gold + wage + profVal + taxVal;
+    document.getElementById('sellResult').innerHTML = `<div class="market-value" style="margin-top:1.5rem;text-align:center;"><div style="font-size:2rem;font-weight:bold;color:var(--accent-gold);">${formatNumber(total)}</div><div style="color:var(--text-secondary);margin-top:0.5rem;">ریال</div><div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-color);font-size:0.9rem;line-height:1.8;text-align:right;">طلای خام: ${formatNumber(gold)}<br>اجرت: ${formatNumber(wage)}<br>سود: ${formatNumber(profVal)}<br>مالیات: ${formatNumber(taxVal)}</div></div>`;
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+function renderCharts() {
+    ['bourseChart','goldChart','silverChart','usdChart','gold18Chart','coinChart','mesghalChart','tetherChart','brentChart','btcChart'].forEach(id => {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        if (canvas.__chartInstance) { canvas.__chartInstance.destroy(); }
+        const ctx = canvas.getContext('2d');
+        canvas.__chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: Array(10).fill(''), datasets: [{ data: Array(10).fill(0).map(() => Math.random()*100+50), borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.1)', tension:0.4, fill:true, pointRadius:0 }] },
+            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false}} }
+        });
     });
+}
 
-})();
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+    document.documentElement.setAttribute('data-theme', app.theme);
+    const user = DB.getCurrentUser();
+    if (user) {
+        app.user = user;
+        app.isPro = true;
+        const saved = DB.getPrices();
+        if (saved) app.prices = saved;
+        initDashboard();
+        setInterval(() => { if (app.currentPage === 'prices' && document.visibilityState === 'visible') fetchLivePrices(); }, 10000);
+    } else {
+        document.getElementById('welcomeScreen').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
+    }
+}
+init();
 </script>
-
-</body>
-</html>
+</body>`;
